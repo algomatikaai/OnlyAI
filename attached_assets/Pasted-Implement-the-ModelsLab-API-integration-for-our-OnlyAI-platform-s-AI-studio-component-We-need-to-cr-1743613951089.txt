@@ -1,0 +1,47 @@
+Implement the ModelsLab API integration for our OnlyAI platform's AI studio component. We need to create an AI generation system where creators can create consistent AI characters and then generate NSFW/SFW content with them. Use the following specific ModelsLab API endpoints:
+
+1. Character Creation Studio:
+   - Use the "POST https://modelslab.com/api/v6/images/text2img" endpoint
+   - Create a UI with:
+     * Character description prompt builder with style presets
+     * Controls for model_id (starting with "midjourney" or similar models)
+     * Negative prompt field with defaults for better quality
+     * Generate button to create 4-8 different versions of the character
+     * Gallery to view and select the best character images
+   
+2. Character Training Module:
+   - Use the "lora_finetune" endpoint (Dreambooth Finetuning API)
+   - Create a UI with:
+     * Display of selected character images from step 1
+     * Fields for character name and description
+     * Training parameters with reasonable defaults
+     * Progress indicator using "fine_tune_status" endpoint
+     * Completion notification with model_id storage
+   
+3. Content Generation Studio:
+   - Use the "POST https://modelslab.com/api/v6/images/text2img" endpoint
+   - Create a UI with:
+     * Dropdown to select from trained character models
+     * Scenario/pose prompt builder with templates
+     * Style selection controls using the enhance_style parameter
+     * SFW/NSFW toggle (using safety_checker="no" for NSFW)
+     * Advanced parameters (width, height, samples, etc.)
+     * Generation button with loading indicator
+     * Results gallery with save options
+     * Option to regenerate with modified prompts
+
+Key implementation details:
+- Store API key in environment variables
+- Handle API responses and errors properly
+- Create a character gallery to show all trained models
+- Implement a content management system for generated images
+- Add proper loading states and progress indicators
+
+Focus first on implementing the Text-to-Image API endpoint to get basic generation working, then add the character training functionality. The core goal is to create a system where users can generate consistent characters and then create various content with those characters.
+This prompt gives Replit Agent specific API endpoints and parameters to work with, based on your exact requirements and the ModelsLab documentation. The approach focuses on:
+
+Generating initial AI character concepts with the text2img API
+Training consistency with the lora_finetune API
+Creating content with the trained characters using text2img API again
+
+This workflow doesn't require human reference images and allows for a completely AI-generated character pipeline, which aligns with your business requirements for OnlyAI.

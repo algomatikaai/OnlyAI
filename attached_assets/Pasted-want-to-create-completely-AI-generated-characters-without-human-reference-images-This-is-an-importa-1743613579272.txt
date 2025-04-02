@@ -1,0 +1,73 @@
+want to create completely AI-generated characters without human reference images. This is an important distinction, as we need a different workflow than the traditional "upload reference photos" approach.
+Here's the revised workflow and specific APIs to use:
+Character Creation Workflow for 100% AI-Generated Characters
+
+Initial Character Design:
+
+Creator describes their desired AI character using text prompts
+System generates several variations of this character
+Creator selects the best images that represent their vision
+
+
+Character Training:
+
+System uses these AI-generated images to train a custom model
+This creates consistency for future generations
+
+
+Content Generation:
+
+Creator uses the trained model to generate various scenarios with their consistent character
+
+
+
+Specific ModelsLab APIs to Use:
+For Initial Character Generation (Step 1):
+
+POST Dreambooth Text2Image endpoint
+This creates the first set of character images based on text description
+
+For Character Model Training (Step 2):
+
+POST Create Dreambooth Request endpoint
+This takes the AI-generated images from step 1 and creates a fine-tuned model
+
+For Content Creation with the Character (Step 3):
+
+POST Dreambooth Text2Image or POST Lora Text2Image
+But now using the model_id from the trained character
+
+Prompt for Replit Agent:
+CopyImplement the ModelsLab API integration for the OnlyAI platform's AI studio. We're creating a system where users can generate completely AI-created characters (no human references) and then create consistent content with those characters.
+
+The workflow has three main stages:
+
+1. Character Design Studio:
+   - Use the "POST Dreambooth Text2Image" API (https://modelslab.com/api/v6/images/text2img)
+   - Create a UI with detailed prompt builder for describing the AI character
+   - Include fields for:
+     * Character physical attributes (body type, hair, eyes, etc.)
+     * Character style (realistic, anime, artistic, etc.)
+     * Character personality traits (to influence pose/expression)
+   - Generate 4-8 variations of the character using the same base prompt
+   - Allow creator to select their favorite versions to use as reference set
+
+2. Character Training Module:
+   - Use the "POST Create Dreambooth Request" API
+   - Take the AI-generated images from step 1 (not human photos)
+   - Add fields for character name, description, and basic training parameters
+   - Show training progress indicator
+   - Store the resulting model_id with the character profile
+
+3. Content Generation Studio:
+   - Use "POST Dreambooth Text2Image" API with the trained model_id
+   - Create UI with:
+     * Dropdown to select from creator's trained AI characters
+     * Scenario prompt builder (what is the character doing/wearing/etc.)
+     * SFW/NSFW toggle (safety_checker parameter)
+     * Style controls and other generation parameters
+     * Results gallery with save options
+
+The key difference from traditional approaches is that we never use human reference photos - everything is 100% AI-generated. We first generate the character with text prompts, then train on those AI-generated images to create consistency.
+
+Start by implementing the Character Design Studio first so creators can begin generating their AI characters right away.
