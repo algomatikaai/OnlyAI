@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertUserSchema, insertCharacterSchema, insertContentSchema, insertSubscriptionSchema, insertCommentSchema } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod-validation-error";
+import axios from "axios";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
@@ -214,6 +215,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(creatorsWithoutPasswords);
     } catch (error) {
       res.status(500).json({ message: "Error fetching featured creators" });
+    }
+  });
+  
+  // Debug endpoint to check if the API key is set (REMOVE IN PRODUCTION)
+  apiRouter.get("/modelslab/check-api-key", async (req, res) => {
+    const apiKey = process.env.MODELSLAB_API_KEY;
+    res.status(200).json({ 
+      keySet: !!apiKey,
+      keyMasked: apiKey ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : null
+    });
+  });
+
+  // ModelsLab API proxy routes
+  apiRouter.post("/modelslab/generate", async (req, res) => {
+    try {
+      const apiKey = process.env.MODELSLAB_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: "ModelsLab API key not configured" });
+      }
+
+      const params = {
+        key: apiKey,
+        ...req.body
+      };
+
+      const response = await axios.post(
+        'https://modelslab.com/api/v6/images/text2img', 
+        params,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      
+      res.status(200).json(response.data);
+    } catch (error: any) {
+      console.error('Error generating image:', error);
+      if (error.response) {
+        return res.status(error.response.status).json(error.response.data);
+      }
+      res.status(500).json({ message: "Error generating image" });
+    }
+  });
+
+  apiRouter.post("/modelslab/lora-finetune", async (req, res) => {
+    try {
+      const apiKey = process.env.MODELSLAB_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: "ModelsLab API key not configured" });
+      }
+
+      const params = {
+        key: apiKey,
+        ...req.body
+      };
+
+      const response = await axios.post(
+        'https://modelslab.com/api/v6/lora/finetune', 
+        params,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      
+      res.status(200).json(response.data);
+    } catch (error: any) {
+      console.error('Error starting fine-tuning:', error);
+      if (error.response) {
+        return res.status(error.response.status).json(error.response.data);
+      }
+      res.status(500).json({ message: "Error starting fine-tuning" });
+    }
+  });
+
+  apiRouter.post("/modelslab/finetune-status/:id", async (req, res) => {
+    try {
+      const apiKey = process.env.MODELSLAB_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: "ModelsLab API key not configured" });
+      }
+
+      const modelId = req.params.id;
+      const response = await axios.post(
+        `https://modelslab.com/api/v6/lora/fine_tune_status/${modelId}`, 
+        { key: apiKey },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      
+      res.status(200).json(response.data);
+    } catch (error: any) {
+      console.error('Error checking fine-tune status:', error);
+      if (error.response) {
+        return res.status(error.response.status).json(error.response.data);
+      }
+      res.status(500).json({ message: "Error checking fine-tune status" });
     }
   });
   

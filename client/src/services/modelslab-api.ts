@@ -58,32 +58,23 @@ export interface ModelslabFineTuneStatusResponse {
   message?: string;
 }
 
-// API URLs
-const API_BASE_URL = 'https://modelslab.com/api/v6';
-const TEXT_TO_IMAGE_URL = `${API_BASE_URL}/images/text2img`;
-const LORA_FINETUNE_URL = `${API_BASE_URL}/lora/finetune`;
-const LORA_STATUS_URL = `${API_BASE_URL}/lora/fine_tune_status`;
+// API URLs - using our server as a proxy
+const API_BASE_URL = '/api/modelslab';
+const TEXT_TO_IMAGE_URL = `${API_BASE_URL}/generate`;
+const LORA_FINETUNE_URL = `${API_BASE_URL}/lora-finetune`;
+const LORA_STATUS_URL = `${API_BASE_URL}/finetune-status`;
 
 /**
  * Generate images using ModelsLab's text-to-image API
  */
 export async function generateImage(params: Omit<ModelslabGenerateRequest, 'key'>): Promise<ModelslabGenerateResponse> {
   try {
-    // Get API key from environment variables
-    const apiKey = import.meta.env.VITE_MODELSLAB_API_KEY;
-    if (!apiKey) {
-      throw new Error('ModelsLab API key not found');
-    }
-
     const response = await fetch(TEXT_TO_IMAGE_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        key: apiKey,
-        ...params
-      })
+      body: JSON.stringify(params)
     });
 
     if (!response.ok) {
@@ -109,21 +100,12 @@ export async function generateImage(params: Omit<ModelslabGenerateRequest, 'key'
  */
 export async function startLoraFineTune(params: Omit<ModelslabLoraFineTuneRequest, 'key'>): Promise<ModelslabLoraFineTuneResponse> {
   try {
-    // Get API key from environment variables
-    const apiKey = import.meta.env.VITE_MODELSLAB_API_KEY;
-    if (!apiKey) {
-      throw new Error('ModelsLab API key not found');
-    }
-
     const response = await fetch(LORA_FINETUNE_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        key: apiKey,
-        ...params
-      })
+      body: JSON.stringify(params)
     });
 
     if (!response.ok) {
@@ -149,20 +131,12 @@ export async function startLoraFineTune(params: Omit<ModelslabLoraFineTuneReques
  */
 export async function checkFineTuneStatus(modelId: string): Promise<ModelslabFineTuneStatusResponse> {
   try {
-    // Get API key from environment variables
-    const apiKey = import.meta.env.VITE_MODELSLAB_API_KEY;
-    if (!apiKey) {
-      throw new Error('ModelsLab API key not found');
-    }
-
     const response = await fetch(`${LORA_STATUS_URL}/${modelId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        key: apiKey
-      })
+      body: JSON.stringify({})
     });
 
     if (!response.ok) {
