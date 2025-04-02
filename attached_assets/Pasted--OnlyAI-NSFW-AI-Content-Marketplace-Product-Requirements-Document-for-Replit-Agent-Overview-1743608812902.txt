@@ -1,0 +1,321 @@
+# OnlyAI: NSFW AI Content Marketplace
+## Product Requirements Document for Replit Agent
+
+## Overview
+
+OnlyAI is a desktop-first (mobile-responsive) subscription platform for AI-generated NSFW content. It functions as a two-sided marketplace connecting creators and subscribers, with a business model directly inspired by OnlyFans and Fanvue, combined with the familiar UI/UX elements from Instagram.
+
+The core premise: Anyone can become a creator by generating and training AI characters, then monetizing NSFW content through subscriptions, pay-per-view content, and tips. The platform supports the "teaser → premium" flywheel where creators share SFW teasers on external platforms (TikTok, Instagram, Twitter) to drive traffic to their monetized OnlyAI profiles.
+
+## Key Success Metrics
+
+- **Creator Acquisition**: Number of active creators generating content
+- **Subscriber Growth**: Total paying subscribers and conversion rate
+- **Revenue Per Creator**: Average monthly revenue generated per creator
+- **Retention**: Subscriber retention rate beyond first month
+- **Content Generation**: Volume of AI-generated content
+- **AI Character Training**: Number of custom AI models created
+
+## Core User Flows
+
+### Creator Journey
+1. Sign up and create account
+2. Create AI character through training or templates
+3. Generate AI content using ModelsLab API
+4. Set up subscription tiers and pricing
+5. Share teaser content to external platforms
+6. Interact with subscribers and fulfill requests
+7. Monitor earnings and analytics
+
+### Subscriber Journey
+1. Discover creators through external teasers or platform discovery
+2. Create account and subscribe to creators
+3. Browse premium content in feed
+4. Interact with content (like, comment)
+5. Purchase additional PPV content or send tips
+6. Request custom content from creators
+
+## Platform Architecture
+
+- **Frontend**: Next.js React application with Tailwind CSS
+- **Backend**: Node.js API with Express
+- **Database**: PostgreSQL via Replit Database
+- **Authentication**: Email/OAuth with JWT
+- **Payments**: Stripe integration for subscriptions and payments
+- **AI Generation**: ModelsLab API for image generation and fine-tuning
+- **Storage**: Content storage with access control
+
+## Core Features (Implementation Priority)
+
+### 1. AI Character Creation & Training
+- Integration with ModelsLab's Dreambooth Fine-tuning API
+- Character creation interface with template options
+- Custom AI model training through image uploads
+- Character management system
+- Fine-tuning controls and options
+
+### 2. AI Content Generation
+- Integration with ModelsLab's Text-to-Image API
+- Prompt engineering system with templates and suggestions
+- Style and appearance controls
+- Content organization and management
+- SFW/NSFW content classification
+
+### 3. Core UI Components
+- Navigation structure (sidebar/bottom bar)
+- Content grid and card components
+- Discovery and feed layouts
+- Creator profile templates
+- Design system and theme implementation
+
+### 4. User Authentication System
+- Email and social login options
+- Profile creation for both creators and subscribers
+- Account management and settings
+- Role-based permissions (creator/subscriber)
+
+### 5. Creator Profile System
+- Customizable profile pages with cover/profile images
+- Bio and social links
+- Content gallery with locked/unlocked indicators
+- Subscription CTAs and pricing display
+- Analytics dashboard for creators
+
+### 6. Content Feed & Discovery
+- Algorithmic content feed for subscribers
+- Discovery page with featured creators
+- Category browsing and search
+- New and trending content sections
+- Following management
+
+### 7. Subscription & Payment System
+- Subscription tier management
+- PPV content purchases
+- Tipping functionality
+- Payment processing and history
+- Creator payout system
+
+## ModelsLab API Integration
+
+### AI Generation Capabilities
+- **Text-to-Image Generation**: Implement ModelsLab's API for generating images from text prompts
+- **Model Fine-tuning**: Use Dreambooth API to train custom AI characters from reference images
+- **LoRA Training**: Support custom style training for more personalized AI characters
+- **Content Safety**: Configure safety parameters for different content types (SFW/NSFW)
+
+### Technical Requirements
+- API key management and security
+- Prompt template system for consistent character representation
+- Training job management and status tracking
+- Model version control and selection
+- Image storage and optimization
+
+### Integration Points
+- Character creation interface → ModelsLab fine-tuning APIs
+- Content generation studio → ModelsLab text-to-image API
+- SFW teaser generation → ModelsLab API with safety filters
+- NSFW content generation → ModelsLab API with safety filters disabled
+
+## UI Design Specifications
+
+### Design System
+- **Color Scheme**: Dark theme (#121212 background, #1E1E1E cards, #FF5E5E accent)
+- **Typography**: Sans-serif fonts (Inter or similar)
+- **Layout**: Desktop-first with responsive mobile design
+- **UI Elements**: Rounded corners, subtle shadows, clean interfaces
+
+### Key Screens
+
+#### 1. AI Character Creation Studio
+Based on modern AI interfaces with clear step process:
+- Character type selection
+- Reference image upload
+- Training parameters configuration
+- Model name and description
+- Training progress tracking
+- Character gallery and management
+
+#### 2. AI Generation Studio
+Inspired by modern AI generation interfaces:
+- Character selection from trained models
+- Prompt builder with templates and suggestions
+- Style controls and parameters
+- Generation preview
+- Content saving and organization
+- Monetization options (free/premium)
+
+#### 3. Discovery Page
+Based on OnlyFans/Fanvue discovery with Instagram-like grid:
+- Featured creators carousel
+- Category navigation
+- Trending content grid
+- New creators section
+- Search functionality
+
+#### 4. Creator Profile
+Inspired by OnlyFans/Fanvue with Instagram navigation elements:
+- Large cover image
+- Profile picture and verification badge
+- Bio and stats (posts, fans)
+- Prominent subscription button/pricing
+- Content tabs (Posts, Photos, Videos, About)
+- Content grid with locked/unlocked indicators
+
+#### 5. Content Feed
+Instagram-inspired feed with OnlyFans functionality:
+- Full-width media cards
+- Creator info header
+- Engagement options (like, comment, tip)
+- Premium content indicators
+- Caption display
+- Infinite scroll
+
+#### 6. Creator Dashboard
+Analytics and management interface:
+- Revenue metrics and charts
+- Subscriber growth visualization
+- Content performance stats
+- AI character performance metrics
+- Payout history and status
+- Quick action tools
+
+## Feature Implementation Chunks
+
+### Chunk 1: Foundation & Core UI
+- Project setup with Next.js and Tailwind
+- Design system implementation
+- Navigation and layout structure
+- Reusable UI components
+- Basic routing and page structure
+
+### Chunk 2: AI Generation Integration
+- ModelsLab API integration
+- Text-to-image generation interface
+- Basic character template selection
+- Image saving and management
+- Content organization system
+
+### Chunk 3: AI Character Training
+- Dreambooth fine-tuning integration
+- Character creation interface
+- Training management and status tracking
+- Character gallery and selection
+- Custom prompt templates
+
+### Chunk 4: Content Display & Feed
+- Content feed implementation
+- Discovery page creation
+- Content card components
+- Media optimization and display
+- Content filtering and categorization
+
+### Chunk 5: Authentication & Profiles
+- User authentication system
+- Profile creation and management
+- Creator profile implementation
+- Settings and preferences
+- Role-based permissions
+
+### Chunk 6: Subscription & Payments
+- Stripe integration for payments
+- Subscription tier management
+- PPV content functionality
+- Tipping system
+- Creator payout processing
+
+### Chunk 7: Engagement & Interaction
+- Like and comment system
+- Direct messaging interface
+- Custom request functionality
+- Notification system
+- Creator-subscriber interaction tools
+
+### Chunk 8: Analytics & Optimization
+- Creator analytics dashboard
+- Content performance metrics
+- AI model performance tracking
+- User behavior analytics
+- Platform performance optimization
+
+## Technical Integrations
+
+### Primary Integrations
+- **ModelsLab API**: For AI image generation and model training
+- **Stripe**: For subscription and payment processing
+- **PostgreSQL**: For database via Replit Database
+- **Cloud Storage**: For content and model storage
+
+### Optional Integrations (Future)
+- **Social Authentication**: For simplified login
+- **Social Sharing API**: To facilitate teaser distribution
+- **Advanced Analytics**: For performance tracking
+
+## Monetization Model
+
+### Revenue Streams
+- **Platform Fee**: 20% of all transactions (subscriptions, PPV, tips)
+- **Premium Creator Tools**: Enhanced AI generation capabilities (future)
+- **Promotion Features**: Boosted visibility in discovery (future)
+
+### Creator Earnings
+- 80% of subscription revenue
+- 80% of PPV content purchases
+- 80% of tips received
+- Weekly or monthly payout options
+
+## Security & Compliance
+
+### Content Moderation
+- AI-assisted content review
+- User reporting system
+- Content policy enforcement
+- Age verification system
+
+### Data Protection
+- Secure user data storage
+- Encrypted personal information
+- Compliance with data protection regulations
+- Privacy controls for users
+
+## Development Guidelines for Replit Agent
+
+1. **Feature-First Approach**: Prioritize building the core AI generation features first
+2. **Modular Components**: Create reusable components for consistent UI
+3. **API Integration**: Implement ModelsLab API connections early
+4. **Mock Authentication**: Use simulated authentication during early development
+5. **Progressive Enhancement**: Start with core features, then add complexity
+6. **Mobile Responsiveness**: Design for desktop-first but ensure mobile compatibility
+
+## Visual References
+
+### Design Inspiration
+- **OnlyFans/Fanvue**: Account structure, monetization UI, content organization
+- **Instagram**: Feed layout, engagement UI, discovery grid, navigation feel
+- **Modern AI Interfaces**: Character creation, generation interfaces, parameter controls
+
+### Brand Identity
+- **Name**: OnlyAI
+- **Personality**: Premium, exclusive yet accessible, tech-forward
+- **Voice**: Professional but friendly, straightforward, not overly technical
+
+## Flywheel Growth Model
+
+The platform will benefit from the "teaser → premium" flywheel effect:
+1. Creators generate AI character and SFW content on OnlyAI
+2. SFW teasers are shared to external platforms (TikTok, Twitter, Instagram)
+3. Curious users follow links to creator profiles on OnlyAI
+4. Users subscribe to access premium NSFW content
+5. Creator earnings incentivize more content creation
+6. More content leads to more teasers, continuing the cycle
+
+## First Implementation Milestone
+
+For the initial version, focus on these core features:
+1. AI character templates (no custom training yet)
+2. Basic AI content generation with ModelsLab API
+3. Core UI components and navigation
+4. Content display and organization
+5. Simple user accounts with mock authentication
+6. Content categorization (SFW/NSFW)
+
+This approach prioritizes the unique value proposition (AI generation) first, allows for rapid testing and iteration, and provides a foundation for adding authentication and monetization features later.

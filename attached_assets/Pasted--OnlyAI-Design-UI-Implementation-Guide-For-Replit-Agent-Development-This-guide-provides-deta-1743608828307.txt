@@ -1,0 +1,631 @@
+# OnlyAI: Design & UI Implementation Guide
+## For Replit Agent Development
+
+This guide provides detailed specifications for implementing the OnlyAI user interface, combining elements from OnlyFans, Fanvue, and Instagram. It includes layout structures, component designs, and visual examples to guide the development process.
+
+## Design System Specifications
+
+### Color Palette
+
+**Primary Colors:**
+- **Background (Dark)**: `#121212`
+- **Surface Elements**: `#1E1E1E`
+- **Cards/Content**: `#2C2C2E`
+- **Primary Action**: `#FF5E5E` (brand color)
+- **Secondary Action**: `#3A3A3C`
+
+**Text Colors:**
+- **Primary Text**: `#FFFFFF`
+- **Secondary Text**: `#AFAFAF`
+- **Disabled Text**: `#666666`
+
+**Status Colors:**
+- **Success**: `#00C896`
+- **Warning**: `#FFBB00`
+- **Error**: `#FF453A`
+- **Premium**: `#FFD700`
+
+### Typography
+
+- **Primary Font**: `Inter` or similar sans-serif
+- **Heading 1**: 24px, Bold
+- **Heading 2**: 20px, SemiBold
+- **Heading 3**: 18px, SemiBold
+- **Body Text**: 16px, Regular
+- **Caption**: 14px, Regular
+- **Small Text**: 12px, Regular
+
+### Spacing System
+
+- **Base Unit**: 4px
+- **Content Padding**: 16px
+- **Card Gap**: 16px
+- **Section Spacing**: 32px
+
+### Layout Structure
+
+**Desktop Navigation:**
+- Left sidebar with logo at top
+- Navigation links with icons and text
+- User profile at bottom
+
+**Mobile Navigation:**
+- Bottom bar with 5 main navigation icons
+- Floating action button for content creation
+
+## Key Screen Layouts
+
+### 1. Discovery Page
+
+```
+┌──────────────────────────────────────────┐
+│ Logo                                 🔍 👤│
+├──────────────────────────────────────────┤
+│ Featured Creators                        │
+│ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐      │
+│ │    │ │    │ │    │ │    │ │    │      │
+│ │ 👤 │ │ 👤 │ │ 👤 │ │ 👤 │ │ 👤 │      │
+│ │    │ │    │ │    │ │    │ │    │      │
+│ └────┘ └────┘ └────┘ └────┘ └────┘      │
+├──────────────────────────────────────────┤
+│ Categories                               │
+│ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ │
+│ │Anime│ │Real │ │Art  │ │Cospl│ │More │ │
+│ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘ │
+├──────────────────────────────────────────┤
+│ Trending                                 │
+│ ┌────────┐ ┌────────┐ ┌────────┐        │
+│ │        │ │        │ │        │        │
+│ │        │ │        │ │        │        │
+│ │   🔒   │ │        │ │   🔒   │        │
+│ │        │ │        │ │        │        │
+│ └────────┘ └────────┘ └────────┘        │
+│ ┌────────┐ ┌────────┐ ┌────────┐        │
+│ │        │ │   🔒   │ │        │        │
+│ │        │ │        │ │        │        │
+│ │        │ │        │ │        │        │
+│ │        │ │        │ │        │        │
+│ └────────┘ └────────┘ └────────┘        │
+├──────────────────────────────────────────┤
+│ 🏠 🔍 ➕ 💬 👤 │
+└──────────────────────────────────────────┘
+```
+
+**Implementation Notes:**
+- Horizontal scrolling carousels for Featured Creators
+- Even-spaced category buttons with icons
+- 3-column grid for trending content on desktop, 2-column on mobile
+- Lock icon overlay on premium content
+- Infinite scroll pagination for content grid
+
+### 2. Creator Profile
+
+```
+┌──────────────────────────────────────────┐
+│ ← Creator Profile                     ⋮  │
+├──────────────────────────────────────────┤
+│                                          │
+│           Cover Image                    │
+│                                          │
+├──────┬───────────────────────────────────┤
+│      │ Creator Name ✓                    │
+│  👤  │ @handle                           │
+│      │ 180 Posts • 1.5K Fans             │
+│      │                                   │
+│      │ Bio text here with multiple lines │
+│      │ that describe the creator's       │
+│      │ persona and content style...      │
+├──────┴───────────────────────────────────┤
+│ ┌─────────────────────────────────────┐  │
+│ │     Subscribe • $9.99/month         │  │
+│ └─────────────────────────────────────┘  │
+├──────────────────────────────────────────┤
+│ Posts    Photos    Videos    About       │
+├──────────────────────────────────────────┤
+│ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐         │
+│ │     │ │  🔒 │ │     │ │  🔒 │         │
+│ │     │ │     │ │     │ │     │         │
+│ └─────┘ └─────┘ └─────┘ └─────┘         │
+│ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐         │
+│ │  🔒 │ │     │ │  🔒 │ │     │         │
+│ │     │ │     │ │     │ │     │         │
+│ └─────┘ └─────┘ └─────┘ └─────┘         │
+├──────────────────────────────────────────┤
+│ 🏠 🔍 ➕ 💬 👤 │
+└──────────────────────────────────────────┘
+```
+
+**Implementation Notes:**
+- Large cover image (16:9 ratio)
+- Profile picture positioned at bottom-left of cover image
+- Verification badge next to creator name
+- Bold, prominent subscription CTA button
+- Horizontal tab navigation for different content types
+- Content grid with locked/unlocked indicators
+- Back button for navigation
+
+### 3. Content Feed
+
+```
+┌──────────────────────────────────────────┐
+│ OnlyAI                               ⋮  │
+├──────────────────────────────────────────┤
+│ ┌──┐ Creator Name ✓                      │
+│ │  │ 2h ago                              │
+│ └──┘                                     │
+│                                          │
+│                                          │
+│                                          │
+│              Image Content               │
+│                                          │
+│                                          │
+│                                          │
+│                                          │
+│ ♥ 128  💬 24  💰 Tip                    │
+│                                          │
+│ Caption text goes here with hashtags and │
+│ possibly some mentions...                │
+│                                          │
+│ View all 24 comments                     │
+├──────────────────────────────────────────┤
+│ ┌──┐ Another Creator ✓                   │
+│ │  │ 5h ago                              │
+│ └──┘                                     │
+│                                          │
+│                                          │
+│           🔒 Premium Content             │
+│           Subscribe to view              │
+│                                          │
+│                                          │
+│ [Subscribe - $9.99/month]                │
+│                                          │
+├──────────────────────────────────────────┤
+│ 🏠 🔍 ➕ 💬 👤 │
+└──────────────────────────────────────────┘
+```
+
+**Implementation Notes:**
+- Full-width media for each post
+- Creator info (avatar, name, timestamp) at top of each post
+- Engagement options below media (like, comment, tip)
+- Premium content shows teaser with subscription CTA
+- Clean separation between posts
+- Infinite scroll for loading more content
+
+### 4. AI Generation Studio
+
+```
+┌──────────────────────────────────────────┐
+│ Create Content                      ↩️  │
+├──────────────────────────────────────────┤
+│ Character                                │
+│ ┌─────────────────────────────────────┐  │
+│ │ Select Character              ▼     │  │
+│ └─────────────────────────────────────┘  │
+│                                          │
+│ Style                                    │
+│ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐      │
+│ │    │ │    │ │    │ │    │ │    │      │
+│ │ S1 │ │ S2 │ │ S3 │ │ S4 │ │ S5 │      │
+│ │    │ │    │ │    │ │    │ │    │      │
+│ └────┘ └────┘ └────┘ └────┘ └────┘      │
+│                                          │
+│ Prompt                                   │
+│ ┌─────────────────────────────────────┐  │
+│ │ Enter prompt details here...        │  │
+│ └─────────────────────────────────────┘  │
+│                                          │
+│ Advanced Options ▼                       │
+│  ○ Create Free Content                   │
+│  ○ Create Premium Content                │
+│                                          │
+│ [     Generate Images     ]              │
+│                                          │
+│ Results                                  │
+│ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
+│ │        │ │        │ │        │ │        │
+│ │        │ │        │ │        │ │        │
+│ │        │ │        │ │        │ │        │
+│ └────────┘ └────────┘ └────────┘ └────────┘
+│                                          │
+│ [Regenerate]    [Use Selected]           │
+├──────────────────────────────────────────┤
+│ 🏠 🔍 ➕ 💬 👤 │
+└──────────────────────────────────────────┘
+```
+
+**Implementation Notes:**
+- Character selection dropdown with saved characters
+- Visual style selector with previews
+- Text area for prompt input with suggestions
+- Toggle for free/premium content
+- Results grid for generated images
+- Options to regenerate or use selected images
+- "Advanced Options" expandable section
+
+### 5. Creator Dashboard
+
+```
+┌──────────────────────────────────────────┐
+│ Dashboard                           ⚙️  │
+├──────────────────────────────────────────┤
+│ Hello, Creator Name                      │
+│                                          │
+│ ┌───────────┐ ┌───────────┐ ┌───────────┐│
+│ │ $342      │ │ 67        │ │ 2.4K      ││
+│ │ Revenue   │ │ Fans      │ │ Views     ││
+│ └───────────┘ └───────────┘ └───────────┘│
+│                                          │
+│ Earnings                                 │
+│ ┌────────────────────────────────────────┐
+│ │                                        │
+│ │           [Chart/Graph]                │
+│ │                                        │
+│ └────────────────────────────────────────┘
+│                                          │
+│ Recent Activity                          │
+│ • New subscriber (2m ago)                │
+│ • $5 tip received (1h ago)               │
+│ • 3 new comments (3h ago)                │
+│                                          │
+│ Popular Content                          │
+│ ┌────┐ ┌────┐ ┌────┐ ┌────┐             │
+│ │    │ │    │ │    │ │    │             │
+│ │    │ │    │ │    │ │    │             │
+│ └────┘ └────┘ └────┘ └────┘             │
+│                                          │
+│ Quick Actions                            │
+│ [Create Post] [Messages] [Payout]        │
+├──────────────────────────────────────────┤
+│ 🏠 📊 ➕ 💬 👤 │
+└──────────────────────────────────────────┘
+```
+
+**Implementation Notes:**
+- Key metrics at the top with large numbers
+- Revenue chart showing earnings over time
+- Real-time activity feed with timestamps
+- Thumbnail grid of popular content
+- Quick action buttons for common tasks
+- Clean, dashboard-style layout
+
+## Component Library Specifications
+
+### 1. Navigation Components
+
+**Desktop Sidebar:**
+```
+┌────────────────────┐
+│       OnlyAI       │
+│       ──────       │
+│                    │
+│ 🏠 Home            │
+│ 🔍 Discover        │
+│ 💬 Messages        │
+│ 🔔 Notifications   │
+│ 👤 Profile         │
+│ ⚙️ Settings        │
+│                    │
+│                    │
+│                    │
+│ [Create Content]   │
+│                    │
+└────────────────────┘
+```
+
+**Mobile Bottom Bar:**
+```
+┌───────────────────────────────────┐
+│ 🏠  |  🔍  |  ➕  |  💬  |  👤  │
+└───────────────────────────────────┘
+```
+
+### 2. Content Cards
+
+**Feed Post Card:**
+```
+┌────────────────────────┐
+│ ┌──┐ Creator Name  ⋮   │
+│ │  │ 2h ago            │
+│ └──┘                   │
+│                        │
+│                        │
+│      Media Content     │
+│                        │
+│                        │
+│                        │
+│ ♥ 128  💬 24  💰 Tip   │
+│                        │
+│ Caption text...        │
+│ View all comments      │
+└────────────────────────┘
+```
+
+**Creator Card:**
+```
+┌────────────────────┐
+│ ┌──────────────┐   │
+│ │              │   │
+│ │   Preview    │   │
+│ │    Image     │   │
+│ │              │   │
+│ └──────────────┘   │
+│ ┌──┐ Creator Name  │
+│ │  │ @handle       │
+│ └──┘               │
+│ $9.99/month        │
+└────────────────────┘
+```
+
+**Locked Content Card:**
+```
+┌────────────────────┐
+│                    │
+│                    │
+│        🔒         │
+│                    │
+│   Premium Content  │
+│  Subscribe to view │
+│                    │
+│ [Subscribe $9.99]  │
+└────────────────────┘
+```
+
+### 3. Buttons & CTAs
+
+**Primary Button:**
+```
+┌────────────────────────┐
+│       SUBSCRIBE        │
+└────────────────────────┘
+```
+- Background: #FF5E5E (Primary)
+- Text: White, 16px, Medium
+- Padding: 12px 16px
+- Border Radius: 8px
+- Hover: Darken by 10%
+
+**Secondary Button:**
+```
+┌────────────────────────┐
+│         FOLLOW         │
+└────────────────────────┘
+```
+- Background: #3A3A3C
+- Text: White, 16px, Medium
+- Padding: 12px 16px
+- Border Radius: 8px
+- Hover: Lighten by 10%
+
+**Ghost Button:**
+```
+┌────────────────────────┐
+│         CANCEL         │
+└────────────────────────┘
+```
+- Background: Transparent
+- Border: 1px solid #3A3A3C
+- Text: White, 16px, Medium
+- Padding: 12px 16px
+- Border Radius: 8px
+- Hover: Background opacity 10%
+
+### 4. Form Elements
+
+**Text Input:**
+```
+┌────────────────────────┐
+│ Label                  │
+│ ┌──────────────────┐   │
+│ │                  │   │
+│ └──────────────────┘   │
+│ Helper text            │
+└────────────────────────┘
+```
+- Background: #1E1E1E
+- Border: 1px solid #3A3A3C
+- Text: White
+- Padding: 12px
+- Border Radius: 8px
+- Focus: 2px solid #FF5E5E
+
+**Dropdown:**
+```
+┌────────────────────┐
+│ Option         ▼   │
+└────────────────────┘
+```
+- Similar styling to text input
+- Dropdown menu background: #2C2C2E
+
+**Toggle/Radio:**
+```
+┌─────────────────┐
+│ ○ Option One    │
+│ ● Option Two    │
+└─────────────────┘
+```
+- Selected color: #FF5E5E
+
+### 5. Modal Dialogs
+
+**Subscription Modal:**
+```
+┌────────────────────────────────┐
+│ Subscribe to Creator        ✕  │
+├────────────────────────────────┤
+│                                │
+│  Get access to all premium     │
+│  content from this creator     │
+│                                │
+│  ● Monthly - $9.99/month       │
+│  ○ 3 Months - $24.99 ($8.33/mo)│
+│  ○ 12 Months - $89.99 ($7.50/mo)│
+│                                │
+│  [      SUBSCRIBE NOW      ]   │
+│                                │
+│  Secure payment via Stripe     │
+└────────────────────────────────┘
+```
+
+**Content Preview Modal:**
+```
+┌────────────────────────────────┐
+│ Creator Name               ✕  │
+├────────────────────────────────┤
+│                                │
+│                                │
+│                                │
+│         Full-size Media        │
+│                                │
+│                                │
+│                                │
+├────────────────────────────────┤
+│ ♥ Like   💬 Comment   💰 Tip   │
+└────────────────────────────────┘
+```
+
+## UI Animation Specifications
+
+### Transition Effects
+- **Page Transitions**: Fade (150ms)
+- **Modal Appears**: Fade + Scale (250ms)
+- **Menu Expansion**: Slide (200ms)
+- **Like Button**: Heart pulse animation
+- **Content Load**: Fade in (300ms)
+
+### Hover Effects
+- Buttons: Color shift + subtle scale (1.02)
+- Cards: Subtle lift (2px shadow increase)
+- Interactive elements: Opacity or color change
+
+## Responsive Behavior
+
+### Breakpoints
+- **Mobile**: 320px - 767px
+- **Tablet**: 768px - 1023px
+- **Desktop**: 1024px+
+
+### Layout Changes
+- **Sidebar**: Visible on desktop, hidden on mobile/tablet
+- **Bottom Bar**: Hidden on desktop, visible on mobile/tablet
+- **Content Grid**: 3 columns (desktop), 2 columns (tablet), 1 column (mobile)
+- **Creator Cards**: Horizontal scrolling on mobile, grid on desktop
+
+## Component Implementation Guide for Replit
+
+### Key Design Principles to Follow
+1. **Content First**: Design with content as the focal point
+2. **Clean UI**: Minimal chrome around content
+3. **Familiar Patterns**: Use interaction patterns from OnlyFans/Instagram
+4. **Responsive Design**: Desktop-first but fully responsive
+5. **Dark Theme**: Optimize for viewing media content
+
+### Implementation Steps
+
+1. **Start with Design System**
+   ```jsx
+   // Example Tailwind config
+   module.exports = {
+     theme: {
+       extend: {
+         colors: {
+           background: '#121212',
+           surface: '#1E1E1E',
+           'surface-2': '#2C2C2E',
+           primary: '#FF5E5E',
+           secondary: '#3A3A3C',
+           'text-primary': '#FFFFFF',
+           'text-secondary': '#AFAFAF',
+         }
+       }
+     }
+   }
+   ```
+
+2. **Build Core Components**
+   - Navigation (Sidebar/Bottom Bar)
+   - Content Cards
+   - Buttons & CTAs
+   - Form Elements
+
+3. **Implement Key Screens**
+   - Discovery Page
+   - Creator Profile
+   - Content Feed
+   - Creation Studio
+   - Dashboard
+
+4. **Add Interactions**
+   - Authentication flows
+   - Content generation
+   - Subscription processes
+
+### Example Component: Creator Card
+
+```jsx
+function CreatorCard({ creator }) {
+  return (
+    <div className="bg-surface rounded-xl overflow-hidden">
+      {/* Preview image */}
+      <div className="aspect-square bg-surface-2 relative">
+        <img 
+          src={creator.previewImage} 
+          alt={creator.name} 
+          className="w-full h-full object-cover"
+        />
+      </div>
+      
+      {/* Creator info */}
+      <div className="p-3">
+        <div className="flex items-center">
+          <div className="w-8 h-8 rounded-full bg-surface-2 mr-2 overflow-hidden">
+            <img 
+              src={creator.avatar} 
+              alt="" 
+              className="w-full h-full object-cover" 
+            />
+          </div>
+          <div>
+            <h3 className="font-medium text-text-primary">{creator.name}</h3>
+            <p className="text-text-secondary text-xs">@{creator.handle}</p>
+          </div>
+        </div>
+        
+        <div className="mt-2 text-text-secondary text-sm">
+          ${creator.price}/month
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+## Visual Examples to Reference
+
+When implementing key screens, refer to these visual patterns:
+
+1. **OnlyFans/Fanvue Elements**:
+   - Creator profile layout with large cover photo
+   - Content grid with lock icons for premium content
+   - Subscription and pricing display
+   - Dashboard analytics for creators
+
+2. **Instagram Elements**:
+   - Clean feed with full-width media
+   - Engagement options underneath content
+   - Stories/Highlights at the top of profiles
+   - Discover page grid layout
+
+## Implementation Priority Guidance
+
+For Replit Agent, focus on implementing these components in order:
+
+1. **Core Navigation Structure** - The foundation of the app's flow
+2. **Content Cards** - The primary content display components
+3. **Creator Profile** - The conversion point for subscriptions
+4. **AI Generation Interface** - The key differentiator for the platform
+5. **Feed & Discovery** - The content consumption experience
+6. **Subscription System** - The monetization mechanics
+
+This approach ensures the most critical user flows are built first, allowing for testing and iteration before expanding functionality.
