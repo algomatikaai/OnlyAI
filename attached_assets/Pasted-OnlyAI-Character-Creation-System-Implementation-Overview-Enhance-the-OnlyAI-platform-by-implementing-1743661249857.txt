@@ -1,0 +1,774 @@
+OnlyAI Character Creation System Implementation
+Overview
+Enhance the OnlyAI platform by implementing a seamless AI character creation system using the ModelsLab API. Focus on creating a streamlined UX that allows creators to generate consistent characters from a single initial concept, automatically handling the complexity of LoRA model training behind the scenes.
+Core Workflow to Implement
+
+Character Design: Visual interface for styling characters
+Concept Selection: Show options and let creator pick one
+Automated Training: Generate training variations and handle LoRA fine-tuning
+Character Gallery: Display trained models for reuse
+Content Generation: Create consistent content with trained characters
+
+Technical Implementation
+1. Enhance the Existing AI Studio Component
+Modify enhanced-ai-studio.tsx to include a dedicated "Character Creation" mode:
+typescriptCopy// enhanced-ai-studio.tsx
+
+// Add a new tab value
+const [activeTab, setActiveTab] = useState('text2img');
+// Options: 'text2img', 'character-creation', 'lora', 'gallery', 'history'
+
+// Add a character creation state
+const [characterCreationStep, setCharacterCreationStep] = useState
+  'design' | 'selection' | 'training' | 'complete'
+>('design');
+
+// Add new state for character design
+const [characterDesign, setCharacterDesign] = useState({
+  style: 'realistic', // 'realistic', 'anime', 'art'
+  bodyType: 'average', // 'slim', 'curvy', 'athletic', 'plus-size'
+  features: [], // facial features/ethnicity
+  hairStyle: 'long-black', // combined style and color
+  distinctiveFeatures: [], // multi-select
+  aestheticStyle: 'casual', // 'glam', 'goth', 'cyberpunk', etc.
+  customPrompt: '', // additional details
+});
+
+// Track generated concepts and selected concept
+const [characterConcepts, setCharacterConcepts] = useState<string[]>([]);
+const [selectedConcept, setSelectedConcept] = useState<string | null>(null);
+
+// Track character creation progress
+const [createCharacterProgress, setCreateCharacterProgress] = useState(0);
+const [createdCharacterId, setCreatedCharacterId] = useState<string | null>(null);
+2. Character Design Interface
+Create a new component for character design:
+typescriptCopy// components/character-designer.tsx
+
+export default function CharacterDesigner({ 
+  design, 
+  onChange, 
+  onGenerate 
+}: CharacterDesignerProps) {
+  // Style selector with visual examples
+  const styleOptions = [
+    { value: 'realistic', label: 'Realistic', image: '/assets/style-realistic.jpg' },
+    { value: 'anime', label: 'Anime', image: '/assets/style-anime.jpg' },
+    { value: 'art', label: 'Art', image: '/assets/style-art.jpg' }
+  ];
+  
+  // Body type selector
+  const bodyTypeOptions = [
+    { value: 'slim', label: 'Slim', image: '/assets/body-slim.jpg' },
+    { value: 'curvy', label: 'Curvy', image: '/assets/body-curvy.jpg' },
+    { value: 'athletic', label: 'Athletic', image: '/assets/body-athletic.jpg' },
+    { value: 'plus-size', label: 'Plus Size', image: '/assets/body-plus.jpg' }
+  ];
+  
+  // Similar visual selectors for other attributes
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-3">Style</h3>
+        <div className="grid grid-cols-3 gap-4">
+          {styleOptions.map(style => (
+            <StyleCard
+              key={style.value}
+              selected={design.style === style.value}
+              onClick={() => onChange({ ...design, style: style.value })}
+              {...style}
+            />
+          ))}
+        </div>
+      </div>
+      
+      {/* Additional attribute selectors */}
+      
+      <div>
+        <Label htmlFor="customPrompt">Additional Details (Optional)</Label>
+        <Textarea
+          id="customPrompt"
+          value={design.customPrompt}
+          onChange={(e) => onChange({ ...design, customPrompt: e.target.value })}
+          placeholder="Add any specific details about your character..."
+          className="mt-1"
+        />
+      </div>
+      
+      <Button 
+        onClick={onGenerate} 
+        className="w-full"
+        size="lg"
+      >
+        Generate Character Concepts
+      </Button>
+    </div>
+  );
+}
+3. Character Concept Selection
+typescriptCopy// components/concept-selector.tsx
+
+export default function ConceptSelector({
+  concepts,
+  onSelect,
+  onRegenerate
+}: ConceptSelectorProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  
+  return (
+    <div className="space-y-4">
+      <h3 className="text-xl font-medium">Choose Your Character</h3>
+      <p className="text-muted-foreground">Select the concept that best matches your vision</p>
+      
+      <div className="grid grid-cols-2 gap-4">
+        {concepts.map((imageUrl, index) => (
+          <div 
+            key={index}
+            className="relative rounded-lg overflow-hidden cursor-pointer group"
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex(null)}
+            onClick={() => onSelect(imageUrl)}
+          >
+            <img 
+              src={imageUrl} 
+              alt={`Character concept ${index + 1}`}
+              className="w-full aspect-[3/4] object-cover"
+            />
+            
+            {hoveredIndex === index && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <Button>Select This Character</Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      <div className="flex justify-center mt-4">
+        <Button variant="outline" onClick={onRegenerate}>
+          Generate New Options
+        </Button>
+      </div>
+    </div>
+  );
+}
+4. Training Progress Component
+typescriptCopy// components/character-training.tsx
+
+export default function CharacterTraining({ progress, characterName }: {
+  progress: number;
+  characterName: string;
+}) {
+  return (
+    <div className="text-center space-y-6 py-10">
+      <h3 className="text-xl font-medium">Creating Your Character</h3>
+      
+      <div className="relative w-full max-w-md mx-auto">
+        <Progress value={progress} className="h-2" />
+        <p className="mt-2 text-sm text-muted-foreground">
+          {progress < 30 ? 'Generating character variations...' :
+           progress < 80 ? 'Training AI model (this takes 20-40 minutes)...' :
+           'Finalizing your character...'}
+        </p>
+      </div>
+      
+      <div className="bg-muted rounded-lg p-6 max-w-md mx-auto mt-10">
+        <p className="mb-4">Your character "{characterName}" is being created.</p>
+        <p className="text-sm text-muted-foreground">
+          This process takes 20-40 minutes to complete. You'll receive a notification
+          when your character is ready to use. Feel free to continue using other features
+          while you wait.
+        </p>
+      </div>
+    </div>
+  );
+}
+5. Core Character Creation Functions
+Add these functions to handle the workflow:
+typescriptCopy// services/character-service.ts
+
+// Generate initial character concepts
+export async function generateCharacterConcepts(design: CharacterDesign): Promise<string[]> {
+  // Build prompt from design attributes
+  const basePrompt = buildCharacterPrompt(design);
+  
+  try {
+    const concepts: string[] = [];
+    
+    // Generate 4 variations with different seeds
+    for (let i = 0; i < 4; i++) {
+      const response = await generateImage({
+        model_id: "flux",
+        prompt: basePrompt,
+        negative_prompt: DEFAULT_NEGATIVE_PROMPT,
+        width: "512",
+        height: "768", // Portrait orientation for characters
+        samples: "1",
+        num_inference_steps: "30",
+        safety_checker: "no",
+        enhance_prompt: "yes",
+        seed: Math.floor(Math.random() * 2147483647)
+      });
+      
+      if (response.output && response.output.length > 0) {
+        concepts.push(response.output[0]);
+      }
+    }
+    
+    return concepts;
+  } catch (error) {
+    console.error('Error generating character concepts:', error);
+    throw new Error('Failed to generate character concepts');
+  }
+}
+
+// Generate training variations and start the LoRA training process
+export async function createCharacterModel(
+  selectedImage: string,
+  basePrompt: string,
+  characterName: string,
+  progressCallback: (progress: number) => void
+): Promise<string> {
+  try {
+    // Step 1: Update progress
+    progressCallback(10);
+    
+    // Step 2: Generate training variations with different angles/poses
+    const trainingImages = await generateTrainingVariations(selectedImage, basePrompt);
+    progressCallback(30);
+    
+    // Step 3: Start LoRA training
+    const response = await startLoraFineTune({
+      instance_prompt: `photo of ${characterName.toLowerCase().replace(/\s+/g, '_')} person`,
+      class_prompt: "photo of a person",
+      base_model_type: "sdxl", // Using SDXL for higher quality
+      negative_prompt: DEFAULT_NEGATIVE_PROMPT,
+      images: trainingImages,
+      training_type: "women", // Focusing on female characters first
+      max_train_steps: "500", // Increased from suggested 50 in feedback
+      lora_type: "lora"
+    });
+    
+    // Step 4: Return the training ID to monitor progress
+    return response.training_id;
+  } catch (error) {
+    console.error('Error creating character model:', error);
+    throw new Error('Failed to create character model');
+  }
+}
+
+// Generate variations for training (different angles, poses, etc.)
+async function generateTrainingVariations(
+  heroImage: string,
+  basePrompt: string
+): Promise<string[]> {
+  // Define variation prompts (different angles, expressions, poses)
+  const variations = [
+    "front view, neutral expression",
+    "profile view, looking to the side",
+    "three-quarter view, slight smile",
+    "close-up portrait, looking directly at camera",
+    "from above, looking up",
+    "looking down, thoughtful expression",
+    "side view, serious expression",
+    "upper body shot, arms crossed",
+    "head and shoulders only, slight smile"
+  ];
+  
+  const trainingImages = [heroImage]; // Start with the selected hero image
+  
+  // Generate variations
+  for (const variation of variations) {
+    const variantPrompt = `${basePrompt}, ${variation}, same person, consistent features`;
+    
+    const response = await generateImage({
+      model_id: "flux",
+      prompt: variantPrompt,
+      negative_prompt: DEFAULT_NEGATIVE_PROMPT + ", inconsistent, different person",
+      width: "512",
+      height: "768",
+      samples: "1",
+      num_inference_steps: "30",
+      safety_checker: "no",
+      enhance_prompt: "yes"
+    });
+    
+    if (response.output && response.output.length > 0) {
+      trainingImages.push(response.output[0]);
+    }
+    
+    // Stop if we have enough images (hero + 9 variations = 10 total)
+    if (trainingImages.length >= 10) break;
+  }
+  
+  return trainingImages;
+}
+
+// Check training status
+export async function checkTrainingStatus(trainingId: string): Promise<{
+  status: string;
+  progress: number;
+  modelId?: string;
+}> {
+  try {
+    const status = await checkFineTuneStatus(trainingId);
+    
+    // Convert status to progress percentage
+    let progress = 0;
+    if (status.state === "deploying_gpu") progress = 10;
+    else if (status.state === "training_started") progress = 40;
+    else if (status.state === "training_success") progress = 60;
+    else if (status.state === "trained_model_compressing") progress = 70;
+    else if (status.state === "trained_model_uploading") progress = 80;
+    else if (status.state === "trained_model_uploaded") progress = 90;
+    else if (status.state === "deploying_model") progress = 95;
+    else if (status.state === "model_ready") progress = 100;
+    
+    return {
+      status: status.state,
+      progress,
+      modelId: status.model_id
+    };
+  } catch (error) {
+    console.error('Error checking training status:', error);
+    throw new Error('Failed to check training status');
+  }
+}
+
+// Generate content with a trained character
+export async function generateCharacterContent(
+  character: Character,
+  contentParams: ContentParams
+): Promise<string[]> {
+  const { scene, outfit, pose, isSFW } = contentParams;
+  
+  // Build content prompt
+  const prompt = `${character.name}, ${outfit}, ${pose}, in ${scene}, high detail, professional lighting`;
+  
+  // Set safety parameters based on SFW/NSFW toggle
+  const safetyChecker = isSFW ? "yes" : "no";
+  const negativePrompt = isSFW 
+    ? DEFAULT_SFW_NEGATIVE_PROMPT 
+    : DEFAULT_NSFW_NEGATIVE_PROMPT;
+  
+  try {
+    const response = await generateImage({
+      model_id: "tamarin-xl-v1",
+      prompt,
+      negative_prompt: negativePrompt,
+      width: "512",
+      height: "768",
+      samples: "4",
+      num_inference_steps: "30",
+      safety_checker: safetyChecker,
+      lora_model: character.modelId,
+      lora_strength: "0.85"
+    });
+    
+    return response.output || [];
+  } catch (error) {
+    console.error('Error generating character content:', error);
+    throw new Error('Failed to generate character content');
+  }
+}
+
+// Helper: Build character prompt from design options
+function buildCharacterPrompt(design: CharacterDesign): string {
+  const { style, bodyType, features, hairStyle, distinctiveFeatures, aestheticStyle, customPrompt } = design;
+  
+  let prompt = "";
+  
+  // Add style base
+  if (style === 'realistic') {
+    prompt += "photorealistic portrait of a beautiful woman, detailed skin texture, professional photography, ";
+  } else if (style === 'anime') {
+    prompt += "anime style illustration of a beautiful female character, vibrant colors, detailed artwork, ";
+  } else if (style === 'art') {
+    prompt += "artistic portrait painting of a beautiful woman, detailed brushwork, professional art style, ";
+  }
+  
+  // Add body type
+  prompt += `${bodyType} body type, `;
+  
+  // Add features (ethnicity/facial features)
+  if (features.length > 0) {
+    prompt += `${features.join(', ')}, `;
+  }
+  
+  // Add hair style
+  prompt += `${hairStyle}, `;
+  
+  // Add distinctive features
+  if (distinctiveFeatures.length > 0) {
+    prompt += `with ${distinctiveFeatures.join(', ')}, `;
+  }
+  
+  // Add aesthetic style
+  prompt += `${aestheticStyle} style, `;
+  
+  // Add custom prompt details if provided
+  if (customPrompt) {
+    prompt += `${customPrompt}, `;
+  }
+  
+  // Add quality boosters
+  prompt += "high-quality, detailed facial features, beautiful lighting";
+  
+  return prompt;
+}
+6. Integrating into the AI Studio
+Update the enhanced-ai-studio.tsx component to include the character creation flow:
+typescriptCopy// Add a new case to the TabsContent for character creation
+<TabsContent value="character-creation" className="flex-1 flex flex-col mt-4 overflow-auto">
+  <Card className="flex-1">
+    <CardContent className="pt-6">
+      {characterCreationStep === 'design' && (
+        <CharacterDesigner
+          design={characterDesign}
+          onChange={setCharacterDesign}
+          onGenerate={async () => {
+            try {
+              setGenerating(true);
+              const concepts = await generateCharacterConcepts(characterDesign);
+              setCharacterConcepts(concepts);
+              setCharacterCreationStep('selection');
+            } catch (error) {
+              toast({
+                title: "Error",
+                description: "Failed to generate character concepts",
+                variant: "destructive"
+              });
+            } finally {
+              setGenerating(false);
+            }
+          }}
+        />
+      )}
+      
+      {characterCreationStep === 'selection' && (
+        <ConceptSelector
+          concepts={characterConcepts}
+          onSelect={async (imageUrl) => {
+            setSelectedConcept(imageUrl);
+            
+            // Get character name
+            const characterName = await showCharacterNameDialog();
+            if (!characterName) return;
+            
+            setCharacterCreationStep('training');
+            
+            // Start training process
+            try {
+              const basePrompt = buildCharacterPrompt(characterDesign);
+              const trainingId = await createCharacterModel(
+                imageUrl,
+                basePrompt,
+                characterName,
+                setCreateCharacterProgress
+              );
+              
+              setCreatedCharacterId(trainingId);
+              
+              // Start monitoring training progress
+              const interval = setInterval(async () => {
+                try {
+                  const status = await checkTrainingStatus(trainingId);
+                  setCreateCharacterProgress(status.progress);
+                  
+                  if (status.progress >= 100 && status.modelId) {
+                    clearInterval(interval);
+                    
+                    // Create character entry in gallery
+                    const newCharacter: Character = {
+                      id: Date.now().toString(),
+                      name: characterName,
+                      modelId: status.modelId,
+                      previewImage: imageUrl,
+                      description: basePrompt,
+                      creationDate: new Date(),
+                      trainingStatus: 'complete'
+                    };
+                    
+                    setCharacters(prev => [...prev, newCharacter]);
+                    setCharacterCreationStep('complete');
+                    
+                    toast({
+                      title: "Character Created",
+                      description: `Your character "${characterName}" is ready to use!`
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error checking training status:", error);
+                }
+              }, 30000); // Check every 30 seconds
+            } catch (error) {
+              toast({
+                title: "Error",
+                description: "Failed to create character model",
+                variant: "destructive"
+              });
+              setCharacterCreationStep('design');
+            }
+          }}
+          onRegenerate={async () => {
+            try {
+              setGenerating(true);
+              const concepts = await generateCharacterConcepts(characterDesign);
+              setCharacterConcepts(concepts);
+            } catch (error) {
+              toast({
+                title: "Error",
+                description: "Failed to generate new concepts",
+                variant: "destructive"
+              });
+            } finally {
+              setGenerating(false);
+            }
+          }}
+        />
+      )}
+      
+      {characterCreationStep === 'training' && (
+        <CharacterTraining
+          progress={createCharacterProgress}
+          characterName={characterName}
+        />
+      )}
+      
+      {characterCreationStep === 'complete' && (
+        <div className="text-center py-10 space-y-6">
+          <div className="text-primary text-6xl">✓</div>
+          <h3 className="text-2xl font-medium">Character Created Successfully!</h3>
+          <p>Your character is now available in your gallery.</p>
+          
+          <div className="flex gap-4 justify-center mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCharacterCreationStep('design');
+                setCharacterDesign({
+                  style: 'realistic',
+                  bodyType: 'average',
+                  features: [],
+                  hairStyle: 'long-black',
+                  distinctiveFeatures: [],
+                  aestheticStyle: 'casual',
+                  customPrompt: ''
+                });
+              }}
+            >
+              Create Another Character
+            </Button>
+            
+            <Button
+              onClick={() => {
+                setActiveTab('gallery');
+              }}
+            >
+              Go to Character Gallery
+            </Button>
+          </div>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+</TabsContent>
+7. Character Content Generation
+Enhance the existing generation functionality to work with characters:
+typescriptCopy// Add to the text2img tab
+<div className="space-y-4 mb-4">
+  <Label>Character</Label>
+  <Select
+    value={selectedCharacterId || "none"}
+    onValueChange={(value) => {
+      if (value === "none") {
+        setSelectedCharacterId(null);
+        return;
+      }
+      
+      const character = characters.find(c => c.id === value);
+      if (character) {
+        setSelectedCharacterId(value);
+        
+        // Auto-update prompt to include character name
+        if (!prompt.includes(character.name)) {
+          setPrompt(`${character.name}, ${prompt}`);
+        }
+      }
+    }}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="No character (standard generation)" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="none">No character (standard generation)</SelectItem>
+      {characters.filter(c => c.trainingStatus === 'complete').map(character => (
+        <SelectItem key={character.id} value={character.id}>
+          {character.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+  
+  {selectedCharacterId && (
+    <div className="rounded-lg border p-3 bg-muted/20 flex gap-3">
+      {/* Display character preview */}
+      <img 
+        src={characters.find(c => c.id === selectedCharacterId)?.previewImage} 
+        alt="Character"
+        className="w-16 h-16 rounded-md object-cover"
+      />
+      <div>
+        <p className="font-medium">{characters.find(c => c.id === selectedCharacterId)?.name}</p>
+        <p className="text-xs text-muted-foreground">Character will maintain consistent appearance</p>
+      </div>
+    </div>
+  )}
+</div>
+
+{/* Add SFW/NSFW toggle for character generation */}
+{selectedCharacterId && (
+  <div className="flex items-center space-x-2 mt-4">
+    <Label htmlFor="sfw-toggle">Content Type</Label>
+    <div className="flex items-center space-x-2">
+      <Button
+        variant={nsfw ? 'outline' : 'default'}
+        size="sm"
+        onClick={() => setNsfw(false)}
+      >
+        SFW
+      </Button>
+      <Button
+        variant={nsfw ? 'default' : 'outline'}
+        size="sm"
+        onClick={() => setNsfw(true)}
+      >
+        NSFW
+      </Button>
+    </div>
+  </div>
+)}
+
+// Modify the handleGenerate function
+const handleGenerate = async () => {
+  if (!prompt.trim()) {
+    toast({
+      title: "Prompt Required",
+      description: "Please enter a prompt to generate an image.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  try {
+    setGenerating(true);
+    setResults([]);
+
+    const character = selectedCharacterId 
+      ? characters.find(c => c.id === selectedCharacterId)
+      : null;
+
+    let response;
+    
+    if (character) {
+      // Generate with character
+      response = await generateCharacterContent(character, {
+        scene: prompt,
+        outfit: "", // Extract from prompt or add UI
+        pose: "", // Extract from prompt or add UI
+        isSFW: !nsfw
+      });
+    } else {
+      // Standard generation
+      response = await generateImage({
+        model_id: selectedModel,
+        prompt: prompt,
+        negative_prompt: negativePrompt,
+        width: width.toString(),
+        height: height.toString(),
+        samples: samples.toString(),
+        num_inference_steps: steps.toString(),
+        guidance_scale: guidance,
+        enhance_prompt: enhancePrompt ? "yes" : "no",
+        seed: useRandomSeed ? Math.floor(Math.random() * 2147483647) : seed,
+        safety_checker: nsfw ? "no" : "yes"
+      });
+    }
+
+    if (response.output && response.output.length > 0) {
+      setResults(response.output);
+      setSelectedResult(response.output[0]);
+      
+      // Add to history
+      setGenerationHistory(prev => [...prev, {
+        prompt: prompt,
+        images: response.output
+      }]);
+      
+      // Add to all generated images for training
+      setAllGeneratedImages(prev => [...prev, ...response.output]);
+    } else {
+      toast({
+        title: "Generation Failed",
+        description: "No images were generated. Please try again.",
+        variant: "destructive",
+      });
+    }
+  } catch (error) {
+    console.error('Error generating image:', error);
+    toast({
+      title: "Generation Error",
+      description: error instanceof Error ? error.message : "Failed to generate image. Check the console for details.",
+      variant: "destructive",
+    });
+  } finally {
+    setGenerating(false);
+  }
+};
+Key Implementation Notes
+
+Error Handling:
+
+Add comprehensive error handling around API calls
+Provide clear user feedback when operations fail
+Implement retry mechanisms for training status checks
+
+
+Performance and UX:
+
+Set realistic expectations for training time (25-45 minutes)
+Show a non-modal notification when training completes
+Enable users to continue using the platform during training
+
+
+Visual Selectors:
+
+Use imagery that represents diversity without stereotyping
+For ethnicity/features, focus on visual examples rather than labels
+Allow custom text input for fine-grained control
+
+
+Training Optimizations:
+
+Set training steps to 500 instead of the initially suggested 50
+Ensure training variations have sufficient diversity for a good model
+Consider implementing a quality check on training images before LoRA training
+
+
+Refinement Option:
+
+Add capability to "refine" a character if results aren't satisfactory
+Allow regeneration of training set or minor prompt adjustments
+Track version history of characters
+
+
+
+Testing Recommendations
+
+Test the full creation workflow with various character types
+Verify consistency of generated content with trained characters
+Test error scenarios (API failures, timeouts)
+Test the SFW/NSFW toggle functionality
+Verify performance on mobile devices
+Test with extended training times to ensure UI remains responsive
