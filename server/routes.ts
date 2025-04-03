@@ -307,6 +307,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error checking fine-tune status" });
     }
   });
+
+  apiRouter.post("/modelslab/model-list", async (req, res) => {
+    try {
+      const apiKey = process.env.MODELSLAB_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: "ModelsLab API key not configured" });
+      }
+
+      const response = await axios.post(
+        'https://modelslab.com/api/v4/dreambooth/model_list', 
+        { key: apiKey },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      
+      res.status(200).json(response.data);
+    } catch (error: any) {
+      console.error('Error getting model list:', error);
+      if (error.response) {
+        return res.status(error.response.status).json(error.response.data);
+      }
+      res.status(500).json({ message: "Error getting model list" });
+    }
+  });
   
   // Mount API routes
   app.use("/api", apiRouter);

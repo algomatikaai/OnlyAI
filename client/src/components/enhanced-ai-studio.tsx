@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { generateImage, startLoraFineTune, checkFineTuneStatus, DEFAULT_MODELS, STYLE_PRESETS, DEFAULT_NEGATIVE_PROMPT } from '@/services/modelslab-api';
+import { 
+  generateImage, 
+  startLoraFineTune, 
+  checkFineTuneStatus, 
+  buildCharacterPrompt,
+  generateTrainingVariations,
+  DEFAULT_MODELS, 
+  STYLE_PRESETS, 
+  DEFAULT_NEGATIVE_PROMPT 
+} from '@/services/modelslab-api';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +27,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+
+// Character creation components
+import CharacterDesigner, { CharacterDesign } from './character-designer';
+import ConceptSelector from './concept-selector';
+import CharacterTraining from './character-training';
 
 interface AIStudioProps {
   open: boolean;
@@ -126,6 +140,22 @@ export default function EnhancedAIStudio({ open, onClose }: AIStudioProps) {
   const [characterName, setCharacterName] = useState('');
   const [characterDescription, setCharacterDescription] = useState('');
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  
+  // Character creation workflow state
+  const [characterCreationStep, setCharacterCreationStep] = useState<'design' | 'selection' | 'training' | 'complete'>('design');
+  const [characterDesign, setCharacterDesign] = useState<CharacterDesign>({
+    style: 'realistic',
+    bodyType: 'average',
+    features: [],
+    hairStyle: 'long-black',
+    distinctiveFeatures: [],
+    aestheticStyle: 'casual',
+    customPrompt: ''
+  });
+  const [characterConcepts, setCharacterConcepts] = useState<string[]>([]);
+  const [selectedConcept, setSelectedConcept] = useState<string | null>(null);
+  const [createCharacterProgress, setCreateCharacterProgress] = useState(0);
+  const [createdCharacterId, setCreatedCharacterId] = useState<string | null>(null);
   
   // LoRA Fine-tuning state
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
@@ -453,10 +483,13 @@ export default function EnhancedAIStudio({ open, onClose }: AIStudioProps) {
       const imageUrl = selectedImages[0]; // Using first image for demo
       
       const response = await startLoraFineTune({
-        instance_url: imageUrl,
-        instance_name: trainingName,
-        is_base_model_sdvx: isBaseModelSDVX,
-        caption: trainingDescription
+        instance_prompt: trainingName,
+        class_prompt: "person, character",
+        base_model_type: isBaseModelSDVX ? "sdxl" : "sd15",
+        images: selectedImages,
+        training_type: "lora",
+        max_train_steps: "800",
+        lora_type: "standard"
       });
       
       if (response.status === 'success' && response.id) {
@@ -571,6 +604,218 @@ export default function EnhancedAIStudio({ open, onClose }: AIStudioProps) {
     handleGenerate();
   };
   
+  // Character Creation Workflow Functions
+  const handleCharacterDesignSubmit = async () => {
+    try {
+      setGenerating(true);
+      
+      // Build prompt from character design
+      const designPrompt = buildCharacterPrompt(characterDesign);
+      const fullPrompt = characterName 
+        ? `${characterName}, ${designPrompt}` 
+        : designPrompt;
+      
+      // Generate 4 character concepts
+      const response = await generateImage({
+        model_id: "flux", // Using high-quality model for character concepts
+        prompt: fullPrompt,
+        negative_prompt: DEFAULT_NEGATIVE_PROMPT,
+        width: "512",
+        height: "768",
+        samples: "4",
+        num_inference_steps: "30",
+        guidance_scale: 7.5,
+        enhance_prompt: "yes"
+      });
+      
+      if (response.output && response.output.length > 0) {
+        setCharacterConcepts(response.output);
+        setCharacterCreationStep('selection');
+      } else {
+        throw new Error("No images were generated");
+      }
+    } catch (error) {
+      console.error('Error generating character concepts:', error);
+      toast({
+        title: "Generation Error",
+        description: error instanceof Error ? error.message : "Failed to generate character concepts.",
+        variant: "destructive"
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+  
+  const handleSelectConcept = (imageUrl: string) => {
+    setSelectedConcept(imageUrl);
+  };
+  
+  const handleRegenerateConcepts = () => {
+    handleCharacterDesignSubmit();
+  };
+  
+  const handleStartCharacterTraining = async () => {
+    if (!selectedConcept) {
+      toast({
+        title: "No Concept Selected",
+        description: "Please select a character concept first.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!characterName) {
+      toast({
+        title: "Name Required",
+        description: "Please provide a name for your character.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setCharacterCreationStep('training');
+      setCreateCharacterProgress(5);
+      
+      // Generate training variations based on the selected concept
+      toast({
+        title: "Generating Training Images",
+        description: "Creating multiple views of your character for consistent results...",
+      });
+      
+      // Use the character design to build the base prompt
+      const basePrompt = buildCharacterPrompt(characterDesign);
+      
+      // Generate 9 variations of the selected concept
+      const trainingImages = await generateTrainingVariations(
+        selectedConcept, 
+        `${characterName}, ${basePrompt}`
+      );
+      
+      if (trainingImages.length < 3) {
+        throw new Error("Not enough training images could be generated");
+      }
+      
+      setCreateCharacterProgress(30);
+      
+      // Start training the model
+      toast({
+        title: "Starting Training",
+        description: "Beginning the model training process...",
+      });
+      
+      const response = await startLoraFineTune({
+        instance_prompt: characterName,
+        class_prompt: "person, character",
+        base_model_type: "sdxl", // High quality model
+        images: trainingImages,
+        training_type: "lora",
+        max_train_steps: "800",
+        lora_type: "standard"
+      });
+      
+      if (response.status === 'success' && response.id) {
+        setTrainingId(response.id);
+        setCreateCharacterProgress(40);
+        
+        // Start monitoring training progress
+        startCharacterTrainingMonitor(response.id);
+      } else {
+        throw new Error(response.message || "Failed to start character training");
+      }
+    } catch (error) {
+      console.error('Error in character training process:', error);
+      setCharacterCreationStep('design');
+      
+      toast({
+        title: "Training Error",
+        description: error instanceof Error ? error.message : "Failed to start character training.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const startCharacterTrainingMonitor = (id: string) => {
+    // Clear any existing interval
+    if (statusCheckInterval.current) {
+      clearInterval(statusCheckInterval.current);
+    }
+    
+    // Set up monitoring of training progress
+    statusCheckInterval.current = setInterval(async () => {
+      try {
+        const status = await checkFineTuneStatus(id);
+        
+        if (status.state === 'running') {
+          // Update progress based on some estimation logic
+          setCreateCharacterProgress(prev => {
+            const newProgress = Math.min(prev + 1, 95); // Cap at 95% until complete
+            return newProgress;
+          });
+        } else if (status.state === 'succeeded' && status.model_id) {
+          setCreateCharacterProgress(100);
+          
+          // Add the trained model to the character gallery
+          const newCharacter: Character = {
+            id: Date.now().toString(),
+            name: characterName,
+            description: buildCharacterPrompt(characterDesign),
+            previewImage: selectedConcept as string,
+            trainingStatus: 'complete',
+            creationDate: new Date(),
+            modelId: status.model_id
+          };
+          
+          setCharacters(prev => [...prev, newCharacter]);
+          setCreatedCharacterId(newCharacter.id);
+          
+          // Set step to complete
+          setCharacterCreationStep('complete');
+          
+          toast({
+            title: "Character Created",
+            description: `Your character "${characterName}" has been successfully created!`,
+          });
+          
+          clearInterval(statusCheckInterval.current!);
+          statusCheckInterval.current = null;
+        } else if (status.state === 'failed') {
+          setCharacterCreationStep('design');
+          
+          toast({
+            title: "Training Failed",
+            description: status.message || "The character training process failed. Please try again.",
+            variant: "destructive"
+          });
+          
+          clearInterval(statusCheckInterval.current!);
+          statusCheckInterval.current = null;
+        }
+      } catch (error) {
+        console.error('Error checking character training status:', error);
+      }
+    }, 5000); // Check every 5 seconds
+  };
+  
+  const handleFinishCharacterCreation = () => {
+    // Reset the character creation workflow
+    setCharacterCreationStep('design');
+    setSelectedConcept(null);
+    setCreateCharacterProgress(0);
+    
+    // If we have a created character, select it
+    if (createdCharacterId) {
+      const character = characters.find(c => c.id === createdCharacterId);
+      if (character) {
+        setSelectedCharacter(character);
+      }
+      setCreatedCharacterId(null);
+    }
+    
+    // Switch to gallery tab to show all characters
+    setActiveTab('gallery');
+  };
+  
   const startTutorial = () => {
     setShowTutorial(true);
     setTutorialStep(0);
@@ -627,6 +872,7 @@ export default function EnhancedAIStudio({ open, onClose }: AIStudioProps) {
         >
           <TabsList className="w-full">
             <TabsTrigger value="text2img" className="flex-1">Text to Image</TabsTrigger>
+            <TabsTrigger value="character-creation" className="flex-1">Character Creation</TabsTrigger>
             <TabsTrigger value="lora" className="flex-1">LoRA Fine-tuning</TabsTrigger>
             <TabsTrigger value="gallery" className="flex-1">Character Gallery</TabsTrigger>
             <TabsTrigger value="history" className="flex-1">History</TabsTrigger>
@@ -1106,6 +1352,123 @@ export default function EnhancedAIStudio({ open, onClose }: AIStudioProps) {
                   </CardFooter>
                 </Card>
               </div>
+            </div>
+          </TabsContent>
+          
+          {/* CHARACTER CREATION TAB */}
+          <TabsContent value="character-creation" className="flex-1 flex flex-col mt-4 overflow-auto">
+            <div className="flex-1 flex flex-col">
+              {characterCreationStep === 'design' && (
+                <div className="flex-1 flex flex-col">
+                  <h3 className="text-xl font-medium mb-6">Design Your Character</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="flex flex-col gap-4">
+                      <div className="space-y-3">
+                        <Label htmlFor="cc-character-name">Character Name</Label>
+                        <Input
+                          id="cc-character-name"
+                          placeholder="Give your character a name"
+                          value={characterName}
+                          onChange={(e) => setCharacterName(e.target.value)}
+                        />
+                      </div>
+                      
+                      <CharacterDesigner 
+                        design={characterDesign}
+                        onChange={setCharacterDesign}
+                        onGenerate={handleCharacterDesignSubmit}
+                      />
+                    </div>
+                    
+                    <div className="flex flex-col items-center justify-center p-8 bg-muted/30 rounded-lg border border-dashed">
+                      <div className="text-center space-y-4">
+                        <h4 className="text-lg font-medium">Character Preview</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Fill out the form and generate concepts to see a preview of your character.
+                        </p>
+                        <div className="py-8">
+                          <WandIcon className="h-16 w-16 mx-auto text-muted-foreground" />
+                        </div>
+                        <Button 
+                          onClick={handleCharacterDesignSubmit} 
+                          className="mt-4"
+                          disabled={!characterName || generating}
+                        >
+                          {generating ? (
+                            <>
+                              <SpinnerIcon className="mr-2 h-4 w-4 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            'Generate Character Concepts'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {characterCreationStep === 'selection' && (
+                <div className="flex-1 flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-medium">Select Your Character Concept</h3>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setCharacterCreationStep('design')}
+                    >
+                      Back to Design
+                    </Button>
+                  </div>
+                  
+                  <ConceptSelector 
+                    concepts={characterConcepts}
+                    onSelect={handleSelectConcept}
+                    onRegenerate={handleRegenerateConcepts}
+                  />
+                  
+                  <div className="mt-6 flex justify-center">
+                    <Button 
+                      onClick={handleStartCharacterTraining} 
+                      disabled={!selectedConcept}
+                      className="px-8"
+                    >
+                      Continue to Training
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {characterCreationStep === 'training' && (
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <CharacterTraining 
+                    progress={createCharacterProgress}
+                    characterName={characterName}
+                    estimatedTimeRemaining={1800 - Math.floor(createCharacterProgress * 18)}
+                    status="training"
+                  />
+                </div>
+              )}
+              
+              {characterCreationStep === 'complete' && (
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <CharacterTraining 
+                    progress={100}
+                    characterName={characterName}
+                    status="completed"
+                  />
+                  
+                  <div className="mt-6">
+                    <Button 
+                      onClick={handleFinishCharacterCreation}
+                      className="px-8"
+                    >
+                      View Your New Character
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
           
